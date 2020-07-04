@@ -24,6 +24,7 @@ subdirectories =
  ARM
  AVR
  BPF
+ CPU0
  Hexagon
  Lanai
  MSP430

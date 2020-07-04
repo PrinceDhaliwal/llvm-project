@@ -312,6 +312,7 @@ enum {
   EM_LANAI = 244,         // Lanai 32-bit processor
   EM_BPF = 247,           // Linux kernel bpf virtual machine
   EM_VE = 251,            // NEC SX-Aurora VE
+  EM_CPU0 = 999,
 };
 
 // Object file classes.
@@ -769,6 +770,18 @@ enum {
 // ELF Relocation type for VE.
 enum {
 #include "ELFRelocs/VE.def"
+};
+
+// CPU0 specific e_flags
+enum {
+  EF_CPU0_NOREORDER = 0x0000001, // Don't reorder instructions
+  EF_CPU0_PIC       = 0x0000002, // Position independent code
+  EF_CPU0_ARCH_32   = 0x5000000, // CPU-32 instruction set per linux not elf.h
+  EF_CPU0_ARCH      = 0xf000000  // Mask for applying EF_CPU0_ARCH_ variant
+};
+
+enum {
+#include "ELFRelocs/CPU0.def"
 };
 
 #undef ELF_RELOC

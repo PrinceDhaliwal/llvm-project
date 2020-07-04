@@ -1,0 +1,23 @@
+[common]
+subdirectories =
+  MCTargetDesc TargetInfo
+
+[component_0]
+type = TargetGroup
+name = CPU0
+parent = Target
+
+[component_1]
+type = Library
+name = CPU0CodeGen
+parent = CPU0
+required_libraries =
+                   CodeGen Core MC
+                   CPU0Desc
+                   CPU0Info
+                   SelectionDAG
+                   Support
+                   Target
+
+
+add_to_library_groups = CPU0

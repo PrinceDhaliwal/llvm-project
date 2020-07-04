@@ -192,7 +192,14 @@ static FeatureBitset getFeatures(StringRef CPU, StringRef FS,
   return Bits;
 }
 
+bool Cpu0DisableUnrecognizedMessage = false;
+
 void MCSubtargetInfo::InitMCProcessorInfo(StringRef CPU, StringRef FS) {
+#if 1
+  if (TargetTriple.getArch() == llvm::Triple::cpu0 ||
+      TargetTriple.getArch() == llvm::Triple::cpu0el)
+    Cpu0DisableUnrecognizedMessage = true;
+#endif
   FeatureBits = getFeatures(CPU, FS, ProcDesc, ProcFeatures);
   if (!CPU.empty())
     CPUSchedModel = &getSchedModelForCPU(CPU);
@@ -290,6 +297,12 @@ bool MCSubtargetInfo::checkFeatures(StringRef FS) const {
 const MCSchedModel &MCSubtargetInfo::getSchedModelForCPU(StringRef CPU) const {
   assert(llvm::is_sorted(ProcDesc) &&
          "Processor machine model table is not sorted");
+
+#if 1
+  if (TargetTriple.getArch() == llvm::Triple::cpu0 ||
+      TargetTriple.getArch() == llvm::Triple::cpu0el)
+    Cpu0DisableUnrecognizedMessage = true;
+#endif
 
   // Find entry
   const SubtargetSubTypeKV *CPUEntry = Find(CPU, ProcDesc);

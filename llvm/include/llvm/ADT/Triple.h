@@ -56,6 +56,8 @@ public:
     avr,            // AVR: Atmel AVR microcontroller
     bpfel,          // eBPF or extended BPF or 64-bit BPF (little endian)
     bpfeb,          // eBPF or extended BPF or 64-bit BPF (big endian)
+    cpu0,           // For CPU0 backend
+    cpu0el,
     hexagon,        // Hexagon: hexagon
     mips,           // MIPS: mips, mipsallegrex, mipsr6
     mipsel,         // MIPSEL: mipsel, mipsallegrexe, mipsr6el

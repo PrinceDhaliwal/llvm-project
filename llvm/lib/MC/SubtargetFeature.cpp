@@ -29,6 +29,8 @@
 
 using namespace llvm;
 
+extern bool Cpu0DisableUnrecognizedMessage;
+
 /// Splits a string of comma separated items in to a vector of strings.
 void SubtargetFeatures::Split(std::vector<std::string> &V, StringRef S) {
   SmallVector<StringRef, 3> Tmp;
