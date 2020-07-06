@@ -2,7 +2,6 @@
 #ifndef LLVM_LIB_TARGET_CPU0_MCTARGETDESC_CPU0MCTARGETDESC_H
 #define LLVM_LIB_TARGET_CPU0_MCTARGETDESC_CPU0MCTARGETDESC_H
 
-#include "CPU0Config.h"
 #include "llvm/Support/DataTypes.h"
 
 namespace llvm {

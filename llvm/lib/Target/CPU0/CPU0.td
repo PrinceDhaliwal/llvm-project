@@ -1,4 +1,5 @@
 
+include "CPU0CallingConv.td"
 include "CPU0Schedule.td"
 include "CPU0InstrInfo.td"
 
@@ -13,4 +14,11 @@ def CPU0 : Target {
   let InstructionSet = CPU0InstrInfo;
 }
 
-include "Target.td"
+def FeatureFloat : SubtargetFeature<"float", "SupportFloat", "true", "Enable floating point operations">;
+def FeatureCmp   : SubtargetFeature<"cmp", "HasCmp", "true", "Enable 'cmp' instructions">;
+def FeatureSlt   : SubtargetFeature<"slt", "HasSlt", "true", "Enable 'slt' instructions">;
+
+def : Processor<"cpu032I", CPU0GenericItineraries, [ FeatureFloat, FeatureCmp ]>;
+def : Processor<"cpu032II", CPU0GenericItineraries, [ FeatureFloat, FeatureSlt ]>;
+
+

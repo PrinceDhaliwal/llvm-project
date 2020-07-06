@@ -1,3 +1,9 @@
+// Instruction Predicate Definitions
+def EnableOverflow       : Predicate<"Subtarget->enableOverflow()">;
+def DisableOverflow      : Predicate<"Subtarget->disableOverflow()">;
+def HasCmp               : Predicate<"Subtarget->hasCmp()">;
+def HasSlt               : Predicate<"Subtarget->hasSlt()">;
+
 // CPU0 profiles and nodes
 
 def SDT_CPU0Ret      : SDTypeProfile<0, 1, [SDTCisInt<0>]>;
