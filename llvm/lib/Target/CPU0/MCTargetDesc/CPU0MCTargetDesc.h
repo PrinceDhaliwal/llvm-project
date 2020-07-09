@@ -5,11 +5,20 @@
 #include "llvm/Support/DataTypes.h"
 
 namespace llvm {
-class Target;
-class Triple;
-
-extern Target TheCPU0Target;
-extern Target TheCPU0elTarget;
+  class Target;
+  class Triple;
+  class MCAsmBackend;
+  class MCContext;
+  class MCCodeEmitter;
+  class MCInstrInfo;
+  class MCObjectWriter;
+  class MCRegisterInfo;
+  class MCSubtargetInfo;
+  class StringRef;
+  class raw_ostream;
+  
+  extern Target TheCPU0Target;
+  extern Target TheCPU0elTarget;
 
 } // End llvm namespace
 

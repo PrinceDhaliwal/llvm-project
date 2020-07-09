@@ -1,0 +1,6 @@
+[component_0]
+type = Library
+name = CPU0AsmPrinter
+parent = CPU0
+required_libraries = MC Support
+add_to_library_groups = CPU0

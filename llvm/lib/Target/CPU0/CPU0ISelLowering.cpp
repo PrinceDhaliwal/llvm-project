@@ -42,7 +42,13 @@ const char *CPU0TargetLowering::getTargetNodeName(unsigned Opcode) const {
 
 CPU0TargetLowering::CPU0TargetLowering(const CPU0TargetMachine &TM,
                                        const CPU0Subtarget &STI)
-  : TargetLowering(TM), Subtarget(STI), ABI(TM.getABI()) { }
+  : TargetLowering(TM), Subtarget(STI), ABI(TM.getABI()) {
+  // set .align 2
+  setMinFunctionAlignment(Align(2));
+
+  const TargetRegisterInfo *TRI = Subtarget.getRegisterInfo();
+  computeRegisterProperties(TRI);
+}
 
 const CPU0TargetLowering *CPU0TargetLowering::create(const CPU0TargetMachine &TM,
                                                      const CPU0Subtarget &STI) {
