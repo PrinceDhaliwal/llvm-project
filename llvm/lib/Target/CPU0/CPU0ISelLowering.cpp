@@ -45,9 +45,6 @@ CPU0TargetLowering::CPU0TargetLowering(const CPU0TargetMachine &TM,
   : TargetLowering(TM), Subtarget(STI), ABI(TM.getABI()) {
   // set .align 2
   setMinFunctionAlignment(Align(2));
-
-  const TargetRegisterInfo *TRI = Subtarget.getRegisterInfo();
-  computeRegisterProperties(TRI);
 }
 
 const CPU0TargetLowering *CPU0TargetLowering::create(const CPU0TargetMachine &TM,

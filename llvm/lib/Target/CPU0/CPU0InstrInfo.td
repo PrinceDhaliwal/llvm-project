@@ -141,6 +141,9 @@ def ADDiu      : ArithLogicI<0x09, "addiu", add, simm16, immSExt16, CPURegs>;
 // Shift instructions
 def JR         : JumpFR<0x3c, "jr", GPROut>;
 
+let isReturn=1, isTerminator=1, hasDelaySlot=1, isBarrier=1, hasCtrlDep=1 in
+def RetLR : CPU0Pseudo<(outs), (ins), "", [(CPU0Ret)]>;
+
 def RET        : RetBase<GPROut>;
 
 let addr = 0 in
@@ -150,4 +153,3 @@ let addr = 0 in
 // Small immediates
 def : Pat<(i32 immSExt16:$in),
           (ADDiu ZERO, imm:$in)>;
-

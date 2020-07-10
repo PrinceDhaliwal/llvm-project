@@ -1,6 +1,7 @@
 #include "CPU0TargetMachine.h"
 #include "CPU0TargetObjectFile.h"
 #include "CPU0.h"
+#include "CPU0SEISelDAGToDAG.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/CodeGen/Passes.h"
 #include "llvm/CodeGen/TargetPassConfig.h"
@@ -122,6 +123,8 @@ namespace {
     CPU0PassConfig(CPU0TargetMachine *TM, PassManagerBase &PM)
       : TargetPassConfig(*TM, PM) {}
 
+    bool addInstSelector() override;
+
     CPU0TargetMachine &getCPU0TargetMachine() const {
       return getTM<CPU0TargetMachine>();
     }
@@ -131,6 +134,11 @@ namespace {
     }
   };
 } // namespace
+
+bool CPU0PassConfig::addInstSelector() {
+  addPass(createCPU0SEISelDag(getCPU0TargetMachine(), getOptLevel()));
+  return false;
+}
 
 TargetPassConfig *CPU0TargetMachine::createPassConfig(PassManagerBase &PM) {
   return new CPU0PassConfig(this, PM);

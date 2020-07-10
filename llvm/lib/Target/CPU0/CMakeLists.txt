@@ -26,6 +26,8 @@ add_llvm_target(CPU0CodeGen
   CPU0TargetObjectFile.cpp
   CPU0MCInstLower.cpp
   CPU0AsmPrinter.cpp
+  CPU0SEISelDAGToDAG.cpp
+  CPU0ISelDAGToDAG.cpp
   CPU0MCInstLower.cpp
   CPU0TargetMachine.cpp)
 
