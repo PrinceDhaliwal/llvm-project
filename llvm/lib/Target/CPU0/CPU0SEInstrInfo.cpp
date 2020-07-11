@@ -32,6 +32,28 @@ const CPU0RegisterInfo &CPU0SEInstrInfo::getRegisterInfo() const {
   return RI;
 }
 
+// Expand Pseuo instructions into real backend instructions
+bool CPU0SEInstrInfo::expandPostRAPseudo(MachineInstr &MI) const {
+  MachineBasicBlock &MBB = *MI.getParent();
+
+  switch (MI.getDesc().getOpcode()) {
+  default:
+    return false;
+
+  case CPU0::RetLR:
+    expandRetLR(MBB, MI);
+    break;
+  }
+
+  MBB.erase(MI);
+  return true;
+}
+
+void CPU0SEInstrInfo::expandRetLR(MachineBasicBlock &MBB,
+				  MachineBasicBlock::iterator I) const {
+  BuildMI(MBB, I, I->getDebugLoc(), get(CPU0::RET)).addReg(CPU0::LR);
+}
+
 const CPU0InstrInfo *llvm::createCPU0SEInstrInfo(const CPU0Subtarget &STI) {
   return new CPU0SEInstrInfo(STI);
 }

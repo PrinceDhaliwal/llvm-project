@@ -30,7 +30,10 @@ public:
 
   const CPU0RegisterInfo &getRegisterInfo() const override;
 
-  
+  bool expandPostRAPseudo(MachineInstr &MI) const override;
+
+private:
+  void expandRetLR(MachineBasicBlock &MBB, MachineBasicBlock::iterator I) const;
 };
 
 }
