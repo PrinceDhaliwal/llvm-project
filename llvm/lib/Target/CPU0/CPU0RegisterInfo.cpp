@@ -51,6 +51,7 @@ BitVector CPU0RegisterInfo::getReservedRegs(const MachineFunction &MF) const {
 void CPU0RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
                                            int SPAdj, unsigned FIOperandNum,
                                            RegScavenger *RS) const {
+  
 }
 
 bool CPU0RegisterInfo::requiresRegisterScavenging(const MachineFunction &MF) const {
