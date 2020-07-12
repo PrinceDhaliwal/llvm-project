@@ -85,7 +85,7 @@ CPU0SEInstrInfo::loadImmediate(int64_t Imm, MachineBasicBlock &MBB,
   const CPU0AnalyzeImmediate::InstSeq &Seq =
     AnalyzeImm.Analyze(Imm, Size, LastInstrIsADDiu);
 
-  CPU0AnalyzeImmediate::InstSeq::const_iterator Int = Seq.begin();
+  CPU0AnalyzeImmediate::InstSeq::const_iterator Inst = Seq.begin();
 
   assert(Seq.size() && (!LastInstrIsADDiu || (Seq.size() > 1)));
 
@@ -107,6 +107,36 @@ CPU0SEInstrInfo::loadImmediate(int64_t Imm, MachineBasicBlock &MBB,
     *NewImm = Inst->ImmOpnd;
 
   return ATReg;
+}
+
+void CPU0SEInstrInfo::
+storeRegToStack(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
+                Register SrcReg, bool IsKill, int FI,
+                const TargetRegisterClass *RC, const TargetRegisterInfo *TRI,
+                int64_t Offset) const {
+  DebugLoc DL;
+  MachineMemOperand *MMO = GetMemOperand(MBB, FI, MachineMemOperand::MOStore);
+  unsigned Opc = 0;
+  Opc = CPU0::ST;
+
+  assert(Opc && "Register class not handled!");
+  BuildMI(MBB, I, DL, get(Opc)).addReg(SrcReg, getKillRegState(IsKill))
+    .addFrameIndex(FI).addImm(Offset).addMemOperand(MMO);
+}
+
+void CPU0SEInstrInfo::
+loadRegFromStack(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
+                 Register DestReg, int FI, const TargetRegisterClass *RC,
+                 const TargetRegisterInfo *TRI, int64_t Offset) const {
+  DebugLoc DL;
+  if (I != MBB.end()) DL = I->getDebugLoc();
+  MachineMemOperand *MMO = GetMemOperand(MBB, FI, MachineMemOperand::MOLoad);
+  unsigned Opc = 0;
+
+  Opc = CPU0::LD;
+  assert(Opc && "Register class not handled!");
+  BuildMI(MBB, I, DL, get(Opc), DestReg).addFrameIndex(FI).addImm(Offset)
+    .addMemOperand(MMO);
 }
 
 const CPU0InstrInfo *llvm::createCPU0SEInstrInfo(const CPU0Subtarget &STI) {

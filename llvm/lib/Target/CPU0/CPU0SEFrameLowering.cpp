@@ -8,10 +8,12 @@
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
 #include "llvm/CodeGen/MachineModuleInfo.h"
+#include "llvm/CodeGen/MachineOperand.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
 #include "llvm/CodeGen/RegisterScavenging.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/Function.h"
+#include "llvm/MC/MachineLocation.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Target/TargetOptions.h"
 
@@ -24,7 +26,7 @@ CPU0SEFrameLowering::CPU0SEFrameLowering(const CPU0Subtarget &STI)
 void CPU0SEFrameLowering::emitPrologue(MachineFunction &MF,
                                        MachineBasicBlock &MBB) const {
   assert(&MF.front() == &MBB && "Shrink-wrapping not yet supported");
-  MachineFrameInfo *MFI = MF.getFrameInfo();
+  MachineFrameInfo *MFI = &MF.getFrameInfo();
   CPU0FunctionInfo *CPU0FI = MF.getInfo<CPU0FunctionInfo>();
 
   const CPU0SEInstrInfo &TII =
@@ -32,7 +34,7 @@ void CPU0SEFrameLowering::emitPrologue(MachineFunction &MF,
   const CPU0RegisterInfo &RegInfo =
     *static_cast<const CPU0RegisterInfo *>(STI.getRegisterInfo());
 
-  MachienBasicBlock::iterator MBBI = MBB.begin();
+  MachineBasicBlock::iterator MBBI = MBB.begin();
   DebugLoc dl = MBBI != MBB.end() ? MBBI->getDebugLoc() : DebugLoc();
   CPU0ABIInfo ABI = STI.getABI();
   unsigned SP = CPU0::SP;
@@ -46,17 +48,16 @@ void CPU0SEFrameLowering::emitPrologue(MachineFunction &MF,
   if (StackSize == 0 && !MFI->adjustsStack()) return;
 
   MachineModuleInfo &MMI = MF.getMMI();
-  const MCRegisterInfo *MFI = MMI.getContext().getRegisterInfo();
+  const MCRegisterInfo *MRI = MMI.getContext().getRegisterInfo();
   MachineLocation DstML, SrcML;
 
   // Adjust stack
   TII.adjustStackPtr(SP, -StackSize, MBB, MBBI);
 
   // emit ".cfi_def_cfa_offset StackSize"
-  unsigned CFIIndex = MMI.addFrameInst(MCCFIInstruction::
-				       createDefCfaOffset(nullptr, -StackSize));
+  unsigned CFIIndex = MF.addFrameInst(MCCFIInstruction::cfiDefCfaOffset(nullptr, -StackSize));
 
-  BuildMI(MBB, MBBI, dl, TII.get(Targetopcode::CFI_INSTRUCTION))
+  BuildMI(MBB, MBBI, dl, TII.get(TargetOpcode::CFI_INSTRUCTION))
     .addCFIIndex(CFIIndex);
 
   const std::vector<CalleeSavedInfo> &CSI = MFI->getCalleeSavedInfo();
@@ -71,17 +72,17 @@ void CPU0SEFrameLowering::emitPrologue(MachineFunction &MF,
     // directives
     for (std::vector<CalleeSavedInfo>::const_iterator I = CSI.begin(),
 	   E = CSI.end(); I != E; ++I) {
-      int64_t Offset = MFI->getObjectOffset(I->getFrameIndex());
+      int64_t Offset = MFI->getObjectOffset(I->getFrameIdx());
       unsigned Reg = I->getReg();
       {
-	// Reg is in CPURegs
-	unsigned CFIIndex = MMI.addFrameInst(MCCFIInstruction::
-					     createOffset(nullptr,
-							  MRI->getDwarfRegNum(Reg, 1),
-							  Offset));
+        // Reg is in CPURegs
+        unsigned CFIIndex = MF.addFrameInst(MCCFIInstruction::
+                                             createOffset(nullptr,
+                                                          MRI->getDwarfRegNum(Reg, 1),
+                                                          Offset));
 
-	BuildMI(MBB, MBBI, dl, TII.get(TargetOpcode::CFI_Instruction))
-	  .addCFIINdex(CFIIndex);
+        BuildMI(MBB, MBBI, dl, TII.get(TargetOpcode::CFI_INSTRUCTION))
+          .addCFIIndex(CFIIndex);
       }
     }
   }
@@ -90,7 +91,7 @@ void CPU0SEFrameLowering::emitPrologue(MachineFunction &MF,
 void CPU0SEFrameLowering::emitEpilogue(MachineFunction &MF,
                                        MachineBasicBlock &MBB) const {
   MachineBasicBlock::iterator MBBI = MBB.getLastNonDebugInstr();
-  MachineFrameInfo *MFI = MF.getFrameInfo();
+  MachineFrameInfo *MFI = &MF.getFrameInfo();
   CPU0FunctionInfo *CPU0FI = MF.getInfo<CPU0FunctionInfo>();
 
   const CPU0SEInstrInfo &TII =
@@ -114,7 +115,7 @@ void CPU0SEFrameLowering::emitEpilogue(MachineFunction &MF,
 
 bool
 CPU0SEFrameLowering::hasReservedCallFrame(const MachineFunction &MF) const {
-  const MachineFrameInfo *MFI = MF.getFrameInfo();
+  const MachineFrameInfo *MFI = &MF.getFrameInfo();
 
   // Reserve call frame if the size of the maximum call frame fits into 16-bit
   // immediate field and there are no variable sized objects on the stack.
@@ -122,6 +123,17 @@ CPU0SEFrameLowering::hasReservedCallFrame(const MachineFunction &MF) const {
   // one instruction.
   return isInt<16>(MFI->getMaxCallFrameSize() + getStackAlignment()) &&
     !MFI->hasVarSizedObjects();
+}
+
+void CPU0SEFrameLowering::determineCalleeSaves(MachineFunction &MF,
+                                               BitVector &SavedRegs,
+                                               RegScavenger *RS) const {
+  TargetFrameLowering::determineCalleeSaves(MF, SavedRegs, RS);
+  CPU0FunctionInfo *CPU0FI = MF.getInfo<CPU0FunctionInfo>();
+  MachineRegisterInfo &MRI = MF.getRegInfo();
+
+  // // // if (MF.getFrameInfo()->hasCalls())
+//    setAliasRegs(MF, SavedRegs, CPU0::LR);
 }
 
 const CPU0FrameLowering *

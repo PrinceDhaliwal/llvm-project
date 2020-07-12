@@ -26,3 +26,14 @@ const CPU0InstrInfo *CPU0InstrInfo::create(CPU0Subtarget &STI) {
 unsigned CPU0InstrInfo::getInstSizeInBytes(const MachineInstr &MI) const {
   return MI.getDesc().getSize();
 }
+
+MachineMemOperand *
+CPU0InstrInfo::GetMemOperand(MachineBasicBlock &MBB, int FI,
+                             MachineMemOperand::Flags Flags) const {
+  MachineFunction &MF = *MBB.getParent();
+  MachineFrameInfo &MFI = MF.getFrameInfo();
+  Align align = MFI.getObjectAlign(FI);
+
+  return MF.getMachineMemOperand(MachinePointerInfo::getFixedStack(MF, FI),
+                                 Flags, MFI.getObjectSize(FI), align);
+}

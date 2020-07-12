@@ -4,7 +4,7 @@
 class CCIfSubtarget<string F, CCAction A>:
       CCIf<!strconcat("State.getTarget().getSubtarget<CPU0Subtarget>().", F), A>;
 
-def CSR_O32 : CalleeSavedRegs<(add LR, FP, (sequence "S%u", 1, 0))>;
+def CSR_O32 : CalleeSavedRegs<(add LR, FP, V0, (sequence "S%u", 1, 0))>;
 
 
 def RetCC_CPU0EABI : CallingConv<[

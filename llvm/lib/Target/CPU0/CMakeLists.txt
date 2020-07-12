@@ -13,6 +13,7 @@ tablegen(LLVM CPU0GenAsmWriter.inc -gen-asm-writer)
 add_public_tablegen_target(CPU0CommonTableGen)
 
 add_llvm_target(CPU0CodeGen
+  CPU0AnalyzeImmediate.cpp
   CPU0FrameLowering.cpp
   CPU0InstrInfo.cpp
   CPU0ISelLowering.cpp
