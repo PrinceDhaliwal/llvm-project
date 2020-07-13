@@ -139,6 +139,38 @@ loadRegFromStack(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
     .addMemOperand(MMO);
 }
 
+void CPU0SEInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
+                                  MachineBasicBlock::iterator I,
+                                  const DebugLoc &DL, Register Dest,
+                                  Register Src, bool KillSrc) const {
+  unsigned Opc = 0, ZeroReg = 0;
+  if (CPU0::CPURegsRegClass.contains(Dest)) { // copy to CPU reg
+    if (CPU0::CPURegsRegClass.contains(Src))
+      Opc = CPU0::ADDu, ZeroReg = CPU0::ZERO;
+    else if (Src == CPU0::HI)
+      Opc = CPU0::MFHI, Src = 0;
+    else if (Src == CPU0::LO)
+      Opc = CPU0::MFLO, Src = 0;
+  }
+  else if (CPU0::CPURegsRegClass.contains(Src)) { // Copy from CPU Reg.
+    if (Dest == CPU0::HI)
+      Opc = CPU0::MTHI, Dest = 0;
+    else if (Dest == CPU0::LO)
+      Opc = CPU0::MTLO, Dest = 0;
+  }
+
+  assert(Opc && "Cannot copy registers");
+  MachineInstrBuilder MIB = BuildMI(MBB, I, DL, get(Opc));
+  if (DestReg)
+    MIB.addReg(DestReg, RegState::Define);
+
+  if (ZeroReg)
+    MIB.addReg(ZeroReg);
+
+  if (SrcReg)
+    MIB.addReg(SrcReg, getKillRegState(KillSrc));
+}
+
 const CPU0InstrInfo *llvm::createCPU0SEInstrInfo(const CPU0Subtarget &STI) {
   return new CPU0SEInstrInfo(STI);
 }

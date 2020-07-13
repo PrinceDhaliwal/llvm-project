@@ -20,6 +20,11 @@ using namespace llvm;
 #define GET_SUBTARGETINFO_CTOR
 #include "CPU0GenSubtargetInfo.inc"
 
+static cl::opt<bool> EnableOverflowOpt("cpu0-enable-overflow",
+                                       cl::Hidden, cl::init(false),
+                                       cl::desc("Trigger overflow instructions \
+add and sub instead of non overflow instructions addu and subu"));
+
 extern bool FixGlobalBaseReg;
 
 void CPU0Subtarget::anchor() {}
@@ -31,7 +36,9 @@ CPU0Subtarget::CPU0Subtarget(const Triple &TT, const StringRef &CPU,
     IsLittle(little), TM(TM_), TargetTriple(TT), TSInfo(),
     InstrInfo(CPU0InstrInfo::create(initializeSubtargetDependencies(CPU, FS, TM))),
     FrameLowering(CPU0FrameLowering::create(*this)),
-    TLInfo(CPU0TargetLowering::create(TM, *this)) { }
+    TLInfo(CPU0TargetLowering::create(TM, *this)) {
+  EnableOverflow = EnableOverflowOpt;
+}
 
 bool CPU0Subtarget::isPositionIndependent() const {
   return TM.isPositionIndependent();

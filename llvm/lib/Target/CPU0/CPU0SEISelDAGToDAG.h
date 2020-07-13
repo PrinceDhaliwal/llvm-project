@@ -14,6 +14,10 @@ namespace llvm {
 
     bool trySelect(SDNode *Node) override;
 
+    std::pair<SDNode *, SDNode *> selectMULT(SDNode *N, unsigned Opc,
+                                             const SDLoc &DL, EVT Ty,
+                                             bool HasLo, bool HasHi);
+
     void processFunctionAfterISel(MachineFunction &MF);
   };
 

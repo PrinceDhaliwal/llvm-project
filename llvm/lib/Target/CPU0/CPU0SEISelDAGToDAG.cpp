@@ -37,11 +37,53 @@ bool CPU0SEDAGToDAGISel::trySelect(SDNode *Node) {
 
   EVT NodeTy = Node->getValueType(0);
   unsigned MultOpc;
+
+  // Instruction selection not handled by the auto-generated table
+  // selection, should be handled here.
   switch (Opcode) {
   default: break;
+
+  case ISD::MULHS:
+  case ISD::MULHU: {
+    MultOpc = (Opcode = ISD::MULHU ? CPU0::MULTU : CPU0::MULT);
+    auto LoHi = selectMult(Node, MultOpc, DL, NodeTy, false, true);
+    ReplaceNode(Node, LoHi.second);
+    return true;
+  }
+  case ISD::Constant: {
+    const ConstantSDNode *CN = dyn_cast<ConstantSDNode>(Node);
+    unsigned Size = CN->getValueSizeInBits(0);
+    if (Size == 32)
+      break;
+    return true;
+  }
+    
   }
 
   return false;
+}
+
+std::pair<SDNode *, SDNode *>
+CPU0SEDAGToDAGISel::selectMULT(SDNode *N, unsigned Opc, const SDLoc &DL,
+                               EVT Ty, bool HasLo, bool HasHi) {
+  SDNode *Lo = 0, *Hi = 0;
+  SDNode *Mul = CurDAG->getMachineNode(Opc, DL, MVT::Glue, N->getOperand(0),
+                                       N->getOperand(1));
+
+  SDValue InFlag = SDValue(Mul, 0);
+
+  if (HasLo) {
+    Lo = CurDAG->getMachineNode(CPU0::MFLO, DL,
+                                Ty, MVT::Glue, InFlag);
+    InFlag = SDValue(Lo, 1);
+  }
+
+  if (HasHi) {
+    Hi = CurDAG->getMachineNode(CPU0::MFHI, DL,
+                                Ty, InFlag);
+  }
+
+  return std::make_pair(Lo, Hi);
 }
 
 FunctionPass *llvm::createCPU0SEISelDag(CPU0TargetMachine &TM,

@@ -45,6 +45,58 @@ CPU0TargetLowering::CPU0TargetLowering(const CPU0TargetMachine &TM,
   : TargetLowering(TM), Subtarget(STI), ABI(TM.getABI()) {
   // set .align 2
   setMinFunctionAlignment(Align(2));
+
+  setOperationAction(ISD::SDIV, MVT::i32, Expand);
+  setOperationAction(ISD::SREM, MVT::i32, Expand);
+  setOperationAction(ISD::UDIV, MVT::i32, Expand);
+  setOperationAction(ISD::UREM, MVT::i32, Expand);
+
+  setTargetDAGCombine(ISD::SDIVREM);
+  setTargetDAGCombine(ISD::UDIVREM);
+}
+
+static SDValue performDivRemCombine(SDNode *N, SelectionDAG &DAG,
+                                    TargetLowering::DAGCombinerInfo &DCI,
+                                    const CPU0Subtarget &Subtarget) {
+  if (DCI.isBeforeLegalizeOps())
+    return SDValue();
+
+  EVT Ty = N->getValueType(0);
+  unsigned LO = CPU0::LO;
+  unsigned HI = CPU0::HI;
+  unsigned Opc = N->getOpcode() == ISD::SDIVREM ? CPU0ISD::DivRem :
+    CPU0ISD::DivRemU;
+
+  SDLoc DL(N);
+  SDValue DivRem = DAG.getNode(Opc, DL, MVT::Glue,
+                               N->getOperand(0), N->getOperand(1));
+
+  SDValue InChain = DAG.getEntryNode();
+  SDValue InGlue = DivRem;
+
+  // insert MFLO
+  if (N->hasAnyUseOfValue(0)) {
+    SDValue CopyFromHi = DAG.getCopyFromReg(InChain, DL,
+                                            HI, Ty, InGlue);
+    DAG.ReplaceAllUsesOfValueWith(SDValue(N, 1), CopyFromHi);
+  }
+
+  return SDValue();
+}
+
+SDValue CPU0TargetLowering::PerformDAGCombine(SDNode *N, DAGCombinerInfo &DCI)
+  const {
+  SelectionDAG &DAG = DCI.DAG;
+  unsigned Opc = N->getOpcode();
+
+  switch (Opc) {
+  default: break;
+  case ISD::SDIVREM:
+  case ISD::UDIVREM:
+    return performDivRemCombine(N, DAG, DCI, Subtarget);
+  }
+
+  return SDValue();
 }
 
 const CPU0TargetLowering *CPU0TargetLowering::create(const CPU0TargetMachine &TM,

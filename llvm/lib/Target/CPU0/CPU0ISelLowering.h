@@ -70,6 +70,7 @@ namespace llvm {
 
     const char *getTargetNodeName(unsigned Opcode) const override;
 
+    SDValue PerformDAGCombine(SDNode *N, DAGCombinerInfo &DCI) const override;
     
     /// CPU0CC - Provides methods used to analyze formal and call arguments and
     /// inquire about calling convention information
