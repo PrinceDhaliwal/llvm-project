@@ -51,6 +51,13 @@ CPU0TargetLowering::CPU0TargetLowering(const CPU0TargetMachine &TM,
   setOperationAction(ISD::UDIV, MVT::i32, Expand);
   setOperationAction(ISD::UREM, MVT::i32, Expand);
 
+  // CPU0 doesn't have sext_inreg, replace them with shl/sra
+  setOperationAction(ISD::SIGN_EXTEND_INREG, MVT::i1, Expand);
+  setOperationAction(ISD::SIGN_EXTEND_INREG, MVT::i8, Expand);
+  setOperationAction(ISD::SIGN_EXTEND_INREG, MVT::i16, Expand);
+  setOperationAction(ISD::SIGN_EXTEND_INREG, MVT::i32, Expand);
+  setOperationAction(ISD::SIGN_EXTEND_INREG, MVT::Other, Expand);
+
   setTargetDAGCombine(ISD::SDIVREM);
   setTargetDAGCombine(ISD::UDIVREM);
 }

@@ -45,8 +45,8 @@ bool CPU0SEDAGToDAGISel::trySelect(SDNode *Node) {
 
   case ISD::MULHS:
   case ISD::MULHU: {
-    MultOpc = (Opcode = ISD::MULHU ? CPU0::MULTU : CPU0::MULT);
-    auto LoHi = selectMult(Node, MultOpc, DL, NodeTy, false, true);
+    MultOpc = (Opcode = ISD::MULHU ? CPU0::MULTu : CPU0::MULT);
+    auto LoHi = selectMULT(Node, MultOpc, DL, NodeTy, false, true);
     ReplaceNode(Node, LoHi.second);
     return true;
   }

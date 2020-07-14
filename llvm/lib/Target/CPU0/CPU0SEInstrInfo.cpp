@@ -141,8 +141,8 @@ loadRegFromStack(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
 
 void CPU0SEInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
                                   MachineBasicBlock::iterator I,
-                                  const DebugLoc &DL, Register Dest,
-                                  Register Src, bool KillSrc) const {
+                                  const DebugLoc &DL, MCRegister Dest,
+                                  MCRegister Src, bool KillSrc) const {
   unsigned Opc = 0, ZeroReg = 0;
   if (CPU0::CPURegsRegClass.contains(Dest)) { // copy to CPU reg
     if (CPU0::CPURegsRegClass.contains(Src))
@@ -161,14 +161,14 @@ void CPU0SEInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
 
   assert(Opc && "Cannot copy registers");
   MachineInstrBuilder MIB = BuildMI(MBB, I, DL, get(Opc));
-  if (DestReg)
-    MIB.addReg(DestReg, RegState::Define);
+  if (Dest)
+    MIB.addReg(Dest, RegState::Define);
 
   if (ZeroReg)
     MIB.addReg(ZeroReg);
 
-  if (SrcReg)
-    MIB.addReg(SrcReg, getKillRegState(KillSrc));
+  if (Src)
+    MIB.addReg(Src, getKillRegState(KillSrc));
 }
 
 const CPU0InstrInfo *llvm::createCPU0SEInstrInfo(const CPU0Subtarget &STI) {

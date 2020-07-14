@@ -212,6 +212,13 @@ class shift_rotate_imm32<bits<8> op, bits<4> isRotate, string instr_asm,
                          SDNode OpNode>:
   shift_rotate_imm<op, isRotate, instr_asm, OpNode, immZExt5, shamt, CPURegs>;
 
+class shift_rotate_reg<bits<8> op, bits<4> isRotate, string instr_asm,
+                       SDNode OpNode, RegisterClass RC>:
+  FA<op, (outs GPROut:$ra), (ins RC:$rb, RC:$rc),
+     !strconcat(instr_asm, "\t$ra, $rb, $rc"),
+     [(set GPROut:$ra, (OpNode RC:$rb, RC:$rc))], IIAlu> {
+  let shamt = 0;
+}
 
 // load upper immediate
 class LoadUpper<bits<8> op, string instr_asm, RegisterClass RC, Operand Imm>:
@@ -247,7 +254,7 @@ def CPU0DivRemU : SDNode<"CPU0ISD::DivRemU", SDT_CPU0DivRem,
 class Mult<bits<8> op, string instr_asm, InstrItinClass itin,
            RegisterClass RC, list<Register> DefRegs>:
   FA<op, (outs), (ins RC:$ra, RC:$rb),
-     !strconcat(instr_asm, "\t$ra, $rb", [], itin> {
+     !strconcat(instr_asm, "\t$ra, $rb"), [], itin> {
   let rc = 0;
   let shamt = 0;
   let isCommutable = 1;
@@ -272,6 +279,32 @@ class Div<SDNode opNode, bits<8> op, string instr_asm, InstrItinClass itin,
 class Div32<SDNode opNode, bits<8> op, string instr_asm, InstrItinClass itin>:
   Div<opNode, op, instr_asm, itin, CPURegs, [HI, LO]>;
 
+class CmpInstr<bits<8> op, string instr_asm,
+               InstrItinClass itin, RegisterClass RC, RegisterClass RD,
+               bit isComm = 0>:
+  FA<op, (outs RD:$ra), (ins RC:$rb, RC:$rc),
+     !strconcat(instr_asm, "\t$ra, $rb, $rc"), [], itin> {
+  let shamt = 0;
+  let isCommutable = isComm;
+  let Predicates = [HasCmp];
+}
+
+class SetCC_R<bits<8> op, string instr_asm, PatFrag cond_op,
+              RegisterClass RC>:
+  FA<op, (outs GPROut:$ra), (ins RC:$rb, RC:$rc),
+     !strconcat(instr_asm, "\t$ra, $rb, $rc"),
+     [(set GPROut:$ra, (cond_op RC:$rb, RC:$rc))],
+     IIAlu>, Requires<[HasSlt]> {
+  let shamt = 0;
+}
+
+class SetCC_I<bits<8> op, string instr_asm, PatFrag cond_op, Operand Od,
+              PatLeaf imm_type, RegisterClass RC>:
+  FL<op, (outs GPROut:$ra), (ins RC:$rb, Od:$imm16),
+     !strconcat(instr_asm, "\t$ra, $rb, $imm16"),
+     [(set GPROut:$ra, (cond_op RC:$rb, imm_type:$imm16))],
+     IIAlu>, Requires<[HasSlt]> {
+}
 
 // Move from LO/HI
 class MoveFromLOHI<bits<8> op, string instr_asm, RegisterClass RC,
@@ -282,6 +315,18 @@ class MoveFromLOHI<bits<8> op, string instr_asm, RegisterClass RC,
   let rc = 0;
   let shamt = 0;
   let Uses = UseRegs;
+  let hasSideEffects = 0;
+}
+
+// Move to LO/HI
+class MoveToLOHI<bits<8> op, string instr_asm, RegisterClass RC,
+                 list<Register> DefRegs>:
+  FA<op, (outs), (ins RC:$ra),
+     !strconcat(instr_asm, "\t$ra"), [], IIHiLo> {
+  let rb = 0;
+  let rc = 0;
+  let shamt = 0;
+  let Defs = DefRegs;
   let hasSideEffects = 0;
 }
 
@@ -333,10 +378,31 @@ def SHRV : shift_rotate_reg<0x22, 0x00, "shrv", srl, CPURegs>;
 def ROLV : shift_rotate_reg<0x23, 0x00, "rolv", rotl, CPURegs>;
 def RORV : shift_rotate_reg<0x24, 0x00, "rorv", rotr, CPURegs>;
 
+def ANDi : ArithLogicI<0x0c, "andi", and, uimm16, immZExt16, CPURegs>;
+def XORi : ArithLogicI<0x0e, "xori", xor, uimm16, immZExt16, CPURegs>;
+
+def AND : ArithLogicR<0x18, "and", and, IIAlu, CPURegs, 1>;
+def OR  : ArithLogicR<0x19, "or", or, IIAlu, CPURegs, 1>;
+def XOR : ArithLogicR<0x1a, "xor", xor, IIAlu, CPURegs, 1>;
+
+let Predicates = [HasSlt] in {
+def SLTi : SetCC_I<0x26, "slti", setlt, simm16, immSExt16, CPURegs>;
+def SLTiu : SetCC_I<0x27, "sltiu", setult, simm16, immSExt16, CPURegs>;
+def SLT : SetCC_R<0x28, "slt", setlt, CPURegs>;
+def SLTu : SetCC_R<0x29, "sltu", setult, CPURegs>;
+}
+
+let Predicates = [HasCmp] in {
+def CMP : CmpInstr<0x10, "cmp", IIAlu, CPURegs, SR, 0>;
+}
+
+
 def MULT : Mult32<0x41, "mult", IIImul>;
 def MULTu : Mult32<0x42, "multu", IIImul>;
 def SDIV : Div32<CPU0DivRem, 0x43, "div", IIIdiv>;
 def UDIV : Div32<CPU0DivRemU, 0x43, "divu", IIIdiv>;
+
+
 
 def MFHI : MoveFromLOHI<0x46, "mfhi", CPURegs, [HI]>;
 def MFLO : MoveFromLOHI<0x47, "mflo", CPURegs, [LO]>;
@@ -370,4 +436,126 @@ def : Pat<(i32 immSExt16:$in),
 // Arbitrary immediates
 def : Pat<(i32 imm:$imm),
       	  (ORi (LUi (HI16 imm:$imm)), (LO16 imm:$imm))>;
+
+def : Pat<(not CPURegs:$in),
+          (XORi CPURegs:$in, 1)>;
+
+
+multiclass SeteqPatsCmp<RegisterClass RC> {
+
+ // a==b
+def : Pat<(seteq RC:$lhs, RC:$rhs),
+          (SHR (ANDi (CMP RC:$lhs, RC:$rhs), 2), 1)>;
+
+ // a != b
+def : Pat<(seteq RC:$lhs, RC:$rhs),
+          (XORi (SHR (ANDi (CMP RC:$lhs, RC:$rhs), 2), 1), 1)>;
+
+}
+
+
+// a < b
+multiclass SetltPatsCmp<RegisterClass RC> {
+def : Pat<(setlt RC:$lhs, RC:$rhs),
+          (ANDi (CMP RC:$lhs, RC:$rhs), 1)>;
+
+def : Pat<(setult RC:$lhs, RC:$rhs),
+          (ANDi (CMP RC:$lhs, RC:$rhs), 1)>;
+
+}
+
+// a <= b
+multiclass SetlePatsCmp<RegisterClass RC> {
+// a <= b is equal to (XORi (b < a), 1)
+def :Pat<(setle RC:$lhs, RC:$rhs),
+         (XORi (ANDi (CMP RC:$rhs, RC:$lhs), 1), 1)>;
+
+def : Pat<(setule RC:$lhs, RC:$rhs),
+          (XORi (ANDi (CMP RC:$rhs, RC:$lhs), 1), 1)>;
+
+}
+
+// a > b
+multiclass SetgtPatsCmp<RegisterClass RC> {
+// a > b is equal to b < a is equal to setlt(b, a)
+def : Pat<(setgt RC:$lhs, RC:$rhs),
+          (ANDi (CMP RC:$rhs, RC:$lhs), 1)>;
+
+def : Pat<(setugt RC:$lhs, RC:$rhs),
+          (ANDi (CMP RC:$rhs, RC:$lhs), 1)>;
+
+}
+
+// a >= b
+multiclass SetgePatsCmp<RegisterClass RC> {
+def : Pat<(setge RC:$lhs, RC:$rhs),
+          (XORi (ANDi (CMP RC:$lhs, RC:$rhs), 1), 1)>;
+
+def : Pat<(setuge RC:$lhs, RC:$rhs),
+          (XORi (ANDi (CMP RC:$lhs, RC:$rhs), 1), 1)>;
+
+}
+
+
+// setcc for slt instruction
+multiclass SeteqPatsSlt<RegisterClass RC, Instruction SLTiuOp, Instruction XOROp,
+                     Instruction SLTuOp, Register ZEROReg> {
+// a == b
+  def : Pat<(seteq RC:$lhs, RC:$rhs),
+                (SLTiuOp (XOROp RC:$lhs, RC:$rhs), 1)>;
+// a != b
+  def : Pat<(setne RC:$lhs, RC:$rhs),
+                (SLTuOp ZEROReg, (XOROp RC:$lhs, RC:$rhs))>;
+}
+
+// a <= b
+multiclass SetlePatsSlt<RegisterClass RC, Instruction SLTOp, Instruction SLTuOp> {
+  def : Pat<(setle RC:$lhs, RC:$rhs),
+// a <= b is equal to (XORi (b < a), 1)
+                (XORi (SLTOp RC:$rhs, RC:$lhs), 1)>;
+  def : Pat<(setule RC:$lhs, RC:$rhs),
+                (XORi (SLTuOp RC:$rhs, RC:$lhs), 1)>;
+}
+
+// a > b
+multiclass SetgtPatsSlt<RegisterClass RC, Instruction SLTOp, Instruction SLTuOp> {
+  def : Pat<(setgt RC:$lhs, RC:$rhs),
+// a > b is equal to b < a is equal to setlt(b, a)
+                (SLTOp RC:$rhs, RC:$lhs)>;
+  def : Pat<(setugt RC:$lhs, RC:$rhs),
+                (SLTuOp RC:$rhs, RC:$lhs)>;
+}
+
+// a >= b
+multiclass SetgePatsSlt<RegisterClass RC, Instruction SLTOp, Instruction SLTuOp> {
+  def : Pat<(setge RC:$lhs, RC:$rhs),
+// a >= b is equal to b <= a
+                (XORi (SLTOp RC:$lhs, RC:$rhs), 1)>;
+  def : Pat<(setuge RC:$lhs, RC:$rhs),
+                (XORi (SLTuOp RC:$lhs, RC:$rhs), 1)>;
+}
+
+multiclass SetgeImmPatsSlt<RegisterClass RC, Instruction SLTiOp,
+                        Instruction SLTiuOp> {
+  def : Pat<(setge RC:$lhs, immSExt16:$rhs),
+                (XORi (SLTiOp RC:$lhs, immSExt16:$rhs), 1)>;
+  def : Pat<(setuge RC:$lhs, immSExt16:$rhs),
+                (XORi (SLTiuOp RC:$lhs, immSExt16:$rhs), 1)>;
+}
+
+let Predicates = [HasSlt] in {
+defm : SeteqPatsSlt<CPURegs, SLTiu, XOR, SLTu, ZERO>;
+defm : SetlePatsSlt<CPURegs, SLT, SLTu>;
+defm : SetgtPatsSlt<CPURegs, SLT, SLTu>;
+defm : SetgePatsSlt<CPURegs, SLT, SLTu>;
+defm : SetgeImmPatsSlt<CPURegs, SLTi, SLTiu>;
+}
+
+let Predicates = [HasCmp] in {
+defm : SeteqPatsCmp<CPURegs>;
+defm : SetltPatsCmp<CPURegs>;
+defm : SetlePatsCmp<CPURegs>;
+defm : SetgtPatsCmp<CPURegs>;
+defm : SetgePatsCmp<CPURegs>;
+}
 
