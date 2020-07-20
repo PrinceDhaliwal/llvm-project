@@ -1,6 +1,6 @@
 #include "CPU0MCTargetDesc.h"
 
-#include "InstPrinter/CPU0InstPrinter.h"
+#include "CPU0InstPrinter.h"
 #include "CPU0MCAsmInfo.h"
 
 #include "llvm/MC/MachineLocation.h"
@@ -93,6 +93,20 @@ static MCInstPrinter *createCPU0MCInstPrinter(const Triple &T,
   return new CPU0InstPrinter(MAI, MII, MRI);
 }
 
+static MCStreamer *createMCStreamer(const Triple &TT, MCContext &Context,
+                                    std::unique_ptr<MCAsmBackend> &&MAB,
+                                    std::unique_ptr<MCObjectWriter> &&OW,
+                                    std::unique_ptr<MCCodeEmitter> &&Emitter, bool RelaxAll) {
+  return createELFStreamer(Context, std::move(MAB), std::move(OW), std::move(Emitter), RelaxAll);
+}
+
+static MCTargetStreamer *createCPU0AsmTargetStreamer(MCStreamer &S,
+                                                     formatted_raw_ostream &OS,
+                                                     MCInstPrinter *InstPrint,
+                                                     bool isVerboseAsm) {
+  return new CPU0TargetAsmStreamer(S, OS);
+}
+
 namespace {
   class CPU0MCInstrAnalysis : public MCInstrAnalysis {
   public:
@@ -123,6 +137,24 @@ extern "C" void LLVMInitializeCPU0TargetMC() {
 
     //  MCInstPrinter
     TargetRegistry::RegisterMCInstPrinter(*T, createCPU0MCInstPrinter);
+
+    // elf streamer
+    TargetRegistry::RegisterELFStreamer(*T, createMCStreamer);
+
+    // asm target streamer
+    TargetRegistry::RegisterAsmTargetStreamer(*T, createCPU0AsmTargetStreamer);
+
+    // MC Code Emitter
+    TargetRegistry::RegisterMCCodeEmitter(TheCPU0Target,
+                                          createCPU0MCCodeEmitterEB);
+    TargetRegistry::RegisterMCCodeEmitter(TheCPU0elTarget,
+                                          createCPU0MCCodeEmitterEL);
+
+    // asm backend
+    TargetRegistry::RegisterMCAsmBackend(TheCPU0Target,
+                                         createCPU0AsmBackendEB32);
+    TargetRegistry::RegisterMCAsmBackend(TheCPU0elTarget,
+                                         createCPU0AsmBackendEL32);
   }
 }
 

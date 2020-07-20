@@ -3,4 +3,8 @@ add_llvm_library(LLVMCPU0Desc
   CPU0MCTargetDesc.cpp
   CPU0MCAsmInfo.cpp
   CPU0InstPrinter.cpp
+  CPU0AsmBackend.cpp
+  CPU0MCCodeEmitter.cpp
+  CPU0ELFObjectWriter.cpp
+  CPU0MCExpr.cpp
 )

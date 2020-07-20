@@ -1,7 +1,7 @@
 #ifndef LLVM_LIB_TARGET_CPU0_MCTARGETDESC_CPU0MCASMINFO_H
 #define LLVM_LIB_TARGET_CPU0_MCTARGETDESC_CPU0MCASMINFO_H
 
-#include "CPU0Config.h"
+#include "CPU0TargetStreamer.h"
 #include "llvm/MC/MCAsmInfoELF.h"
 
 namespace llvm {

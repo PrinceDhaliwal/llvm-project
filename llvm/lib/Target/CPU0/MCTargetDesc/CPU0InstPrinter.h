@@ -1,8 +1,6 @@
 #ifndef LLVM_LIB_TARGET_CPU0_INSTPRINTER_CPU0INSTPRINTER_H
 #define LLVM_LIB_TARGET_CPU0_INSTPRINTER_CPU0INSTPRINTER_H
 
-#include "CPU0Config.h"
-
 #include "llvm/MC/MCInstPrinter.h"
 
 namespace llvm {
